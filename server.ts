@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
 import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs';
@@ -820,6 +819,8 @@ async function startServer() {
   const distExists = fs.existsSync(path.resolve(__dirname, 'dist'));
 
   if (!isProd || !distExists) {
+    // Vite hanya dimuat saat mode development (serverless/Vercel tidak butuh)
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
