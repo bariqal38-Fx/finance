@@ -3,6 +3,7 @@
   "appId": "1:569859046213:web:c4f290ebf2ecad9dfddc2c",
   "apiKey": "AIzaSyDe0KOaSaWDwA1MbIAHq0Wc1OswG6Mzzb0",
   "authDomain": "gen-lang-client-0540907211.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-financejournalpr-b1cd1cba-d571-48ea-b915-2f3c88518012",
   "storageBucket": "gen-lang-client-0540907211.firebasestorage.app",
   "messagingSenderId": "569859046213",
   "measurementId": "",

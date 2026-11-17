@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="50%" stop-color="#022c22"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#10b981" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <rect width="504" height="504" x="4" y="4" rx="124" fill="none" stroke="#10b981" stroke-width="8" stroke-opacity="0.4"/>
+
+  <!-- Outer Ring Accent -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#10b981" stroke-width="12" stroke-opacity="0.2"/>
+
+  <!-- FJ Monogram / Emblem -->
+  <g filter="url(#glow)">
+    <!-- F Letter -->
+    <path d="M160 140 H280 V185 H215 V235 H270 V280 H215 V370 H160 Z" fill="url(#accent)"/>
+    <!-- J Letter -->
+    <path d="M290 140 H345 V315 C345 355 315 375 270 375 C240 375 220 365 210 355 L230 315 C240 322 252 328 270 328 C285 328 290 320 290 305 Z" fill="#ffffff"/>
+    <!-- Small Emerald Sparkle -->
+    <circle cx="360" cy="150" r="14" fill="#34d399"/>
+  </g>
+</svg>

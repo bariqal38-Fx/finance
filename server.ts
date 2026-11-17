@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import { Pool } from 'pg';
 import path from 'path';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -13,6 +14,37 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
+
+// Keamanan Tambahan: Security Headers anti-clickjacking & XSS
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Proteksi Brute-Force Rate Limiting pada Login
+const loginRateLimiter = new Map<string, { attempts: number; firstTime: number }>();
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const windowMs = 5 * 60 * 1000; // 5 menit window
+  const maxAttempts = 10;
+
+  const record = loginRateLimiter.get(key);
+  if (!record) {
+    loginRateLimiter.set(key, { attempts: 1, firstTime: now });
+    return true;
+  }
+  if (now - record.firstTime > windowMs) {
+    loginRateLimiter.set(key, { attempts: 1, firstTime: now });
+    return true;
+  }
+  if (record.attempts >= maxAttempts) {
+    return false;
+  }
+  record.attempts += 1;
+  return true;
+}
 
 // ----------------------------------------------------
 // 1. KONEKSI KE DATABASE NEON POSTGRESQL
@@ -211,6 +243,15 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const rateLimitKey = `${cleanEmail}_${req.ip || 'ip'}`;
+
+    if (!checkRateLimit(rateLimitKey)) {
+      res.status(429).json({
+        error: 'Terlalu banyak percobaan masuk yang gagal. Demi keamanan akun Anda, silakan coba kembali setelah 5 menit.',
+      });
+      return;
+    }
+
     const result = await pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [cleanEmail]);
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Akun dengan email ini belum terdaftar. Silakan buat akun baru.' });
@@ -502,10 +543,22 @@ app.get('/api/transactions', async (req: Request, res: Response) => {
   }
 });
 
-// Update & Hapus Transaksi (Edit Jurnal)
+// Update & Hapus Transaksi (Edit Jurnal dengan Validasi Kepemilikan)
 app.put('/api/transactions/:id', async (req: Request, res: Response) => {
   try {
-    const { description, amount, type, transaction_date } = req.body;
+    const { userId, description, amount, type, transaction_date } = req.body;
+    if (userId) {
+      const check = await pool.query('SELECT user_id FROM transactions WHERE id = $1', [req.params.id]);
+      if (check.rows.length === 0) {
+        res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
+        return;
+      }
+      if (check.rows[0].user_id !== parseInt(userId, 10)) {
+        res.status(403).json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk mengubah transaksi ini.' });
+        return;
+      }
+    }
+
     const result = await pool.query(
       `UPDATE transactions 
        SET description = $1, amount = $2, type = $3, transaction_date = $4 
@@ -520,6 +573,19 @@ app.put('/api/transactions/:id', async (req: Request, res: Response) => {
 
 app.delete('/api/transactions/:id', async (req: Request, res: Response) => {
   try {
+    const { userId } = req.query;
+    if (userId) {
+      const check = await pool.query('SELECT user_id FROM transactions WHERE id = $1', [req.params.id]);
+      if (check.rows.length === 0) {
+        res.status(404).json({ error: 'Transaksi tidak ditemukan.' });
+        return;
+      }
+      if (check.rows[0].user_id !== parseInt(userId as string, 10)) {
+        res.status(403).json({ error: 'Akses ditolak: Anda tidak memiliki izin untuk menghapus transaksi ini.' });
+        return;
+      }
+    }
+
     await pool.query('DELETE FROM transactions WHERE id = $1', [req.params.id]);
     res.json({ message: 'Transaksi berhasil dihapus.' });
   } catch (err: any) {
@@ -751,8 +817,9 @@ app.get('/api/download-zip', (_req: Request, res: Response) => {
 // ----------------------------------------------------
 async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
+  const distExists = fs.existsSync(path.resolve(__dirname, 'dist'));
 
-  if (!isProd) {
+  if (!isProd || !distExists) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -765,10 +832,14 @@ async function startServer() {
     });
   }
 
-  const PORT = 3000;
+  const PORT = parseInt(process.env.PORT || '3000', 10);
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Finance Journal Pro server running on http://localhost:${PORT}`);
+    console.log(`Finance Journal Pro server running on port ${PORT}`);
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

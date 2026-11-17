@@ -12,10 +12,14 @@ import { LoginPage } from './components/LoginPage';
 import { AddTransactionModal } from './components/AddTransactionModal';
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { EditProfileModal } from './components/EditProfileModal';
+import { VoiceTransactionModal } from './components/VoiceTransactionModal';
+import { InstallPwaBanner } from './components/InstallPwaBanner';
+import { TechIntroSplash } from './components/TechIntroSplash';
 import { User, Transaction, TransactionSummary, DbStatus, TransactionType } from './types';
 import { Database, Shield, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('fj_user');
     if (saved) {
@@ -48,6 +52,8 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
   const [addTxType, setAddTxType] = useState<TransactionType>('pemasukan');
+  const [isVoiceTxOpen, setIsVoiceTxOpen] = useState(false);
+  const [voiceTxType, setVoiceTxType] = useState<TransactionType>('pemasukan');
   const [isEditTxOpen, setIsEditTxOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -156,24 +162,39 @@ export default function App() {
     setIsAuthOpen(true);
   };
 
-  const handleQuickSwitch = async (targetRole: 'user' | 'admin') => {
-    const email =
-      targetRole === 'admin' ? 'admin@financejournal.pro' : 'siti.rahma@gmail.com';
-    const password = targetRole === 'admin' ? 'admin123' : 'user123';
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        handleLoginSuccess(data.user);
-      }
-    } catch (err) {
-      console.error('Quick switch error:', err);
+  const openVoiceModal = (type: TransactionType = 'pemasukan') => {
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return;
     }
+    setVoiceTxType(type);
+    setIsVoiceTxOpen(true);
+  };
+
+  const handleSaveVoiceTransaction = async (data: {
+    description: string;
+    amount: number;
+    type: TransactionType;
+    transaction_date: string;
+  }) => {
+    if (!currentUser) return;
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        description: data.description,
+        amount: data.amount,
+        type: data.type,
+        transaction_date: data.transaction_date,
+      }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || 'Gagal mencatat transaksi.');
+    }
+    await fetchTransactions();
+    await fetchDbStatus();
   };
 
   const openAddModal = (type: TransactionType = 'pemasukan') => {
@@ -189,6 +210,11 @@ export default function App() {
     setEditingTx(tx);
     setIsEditTxOpen(true);
   };
+
+  // Tampilkan Animasi Intro Teknologi Keren saat pertama kali aplikasi dibuka
+  if (showIntro) {
+    return <TechIntroSplash onFinish={() => setShowIntro(false)} />;
+  }
 
   // Jika belum login, tampilkan halaman Login/Register sebagai halaman pertama
   if (!currentUser) {
@@ -206,6 +232,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
+      {/* PWA In-App Mobile/Desktop Install Banner */}
+      <InstallPwaBanner />
+
       {/* Top Bar adhering to Top Bar Contract */}
       <Navbar
         currentUser={currentUser}
@@ -221,7 +250,7 @@ export default function App() {
         dbStatus={dbStatus}
         dbLoading={dbLoading}
         onRefreshDb={fetchDbStatus}
-        onSwitchUserQuick={handleQuickSwitch}
+        onSwitchUserQuick={() => {}}
       />
 
       {/* Main Viewport */}
@@ -239,6 +268,7 @@ export default function App() {
             }}
             onOpenAddModal={openAddModal}
             onOpenEditModal={openEditModal}
+            onOpenVoiceModal={openVoiceModal}
           />
         ) : (
           <AdminMonitoring />
@@ -253,7 +283,14 @@ export default function App() {
             <span aria-hidden="true">·</span>
             <span>Aplikasi Manajemen Keuangan Pribadi</span>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+          <div className="flex items-center gap-3 text-[11px] text-neutral-500">
+            <button
+              onClick={() => setShowIntro(true)}
+              className="text-emerald-400/90 hover:text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span>⚡ Putar Animasi Intro Teknologi</span>
+            </button>
+            <span aria-hidden="true">·</span>
             <span>© 2026 Finance Journal Pro. Seluruh Hak Cipta Dilindungi.</span>
           </div>
         </div>
@@ -277,6 +314,15 @@ export default function App() {
           }}
           currentUser={currentUser}
           initialType={addTxType}
+        />
+      )}
+
+      {currentUser && (
+        <VoiceTransactionModal
+          isOpen={isVoiceTxOpen}
+          onClose={() => setIsVoiceTxOpen(false)}
+          initialType={voiceTxType}
+          onSave={handleSaveVoiceTransaction}
         />
       )}
 

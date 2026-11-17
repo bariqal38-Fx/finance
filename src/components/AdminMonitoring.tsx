@@ -10,14 +10,10 @@ import {
   Lock,
   CheckCircle2,
 } from 'lucide-react';
-import { DaftarAkunUser, User } from '../types';
+import { DaftarAkunUser } from '../types';
 import { formatDateIndo } from '../utils/formatters';
 
-interface Props {
-  onImpersonateUser?: (user: User) => void;
-}
-
-export const AdminMonitoring: React.FC<Props> = () => {
+export const AdminMonitoring: React.FC = () => {
   const [users, setUsers] = useState<DaftarAkunUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');

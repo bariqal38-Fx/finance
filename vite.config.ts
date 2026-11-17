@@ -5,7 +5,6 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/finance/', // <--- Ditambahkan agar sesuai dengan repository GitHub kamu
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

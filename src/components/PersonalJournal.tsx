@@ -11,6 +11,8 @@ import {
   Calendar,
   AlertCircle,
   FileSpreadsheet,
+  Mic,
+  Sparkles,
 } from 'lucide-react';
 import { Transaction, TransactionSummary, TransactionType, User } from '../types';
 import { formatRupiah, formatDateIndo, formatDateTimeIndo, exportTransactionsToCsv } from '../utils/formatters';
@@ -24,6 +26,7 @@ interface Props {
   onRefresh: () => void;
   onOpenAddModal: (type?: TransactionType) => void;
   onOpenEditModal: (tx: Transaction) => void;
+  onOpenVoiceModal?: (type: TransactionType) => void;
 }
 
 export const PersonalJournal: React.FC<Props> = ({
@@ -34,6 +37,7 @@ export const PersonalJournal: React.FC<Props> = ({
   onRefresh,
   onOpenAddModal,
   onOpenEditModal,
+  onOpenVoiceModal,
 }) => {
   const [filterType, setFilterType] = useState<'all' | 'pemasukan' | 'pengeluaran'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,21 +103,79 @@ export const PersonalJournal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Action Buttons for Process 2.0 & 3.0 */}
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons for Process 2.0 & 3.0: Manual & AI Voice */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tombol Hijau Voice (Pemasukan) */}
+          <button
+            onClick={() => onOpenVoiceModal?.('pemasukan')}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 transition-colors shadow-xs cursor-pointer"
+            title="Catat Pemasukan dengan AI Voice (Tombol Hijau)"
+          >
+            <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+            <span>Voice Pemasukan</span>
+          </button>
+
+          {/* Tombol Merah Voice (Pengeluaran) */}
+          <button
+            onClick={() => onOpenVoiceModal?.('pengeluaran')}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-400 transition-colors shadow-xs cursor-pointer"
+            title="Catat Pengeluaran dengan AI Voice (Tombol Merah)"
+          >
+            <Mic className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+            <span>Voice Pengeluaran</span>
+          </button>
+
           <button
             onClick={() => onOpenAddModal('pemasukan')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 transition-colors shadow-xs"
+            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 transition-colors shadow-xs cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Catat Pemasukan
           </button>
           <button
             onClick={() => onOpenAddModal('pengeluaran')}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-rose-500 hover:bg-rose-400 text-white transition-colors shadow-xs"
+            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl bg-rose-500 hover:bg-rose-400 text-white transition-colors shadow-xs cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Catat Pengeluaran
+          </button>
+        </div>
+      </div>
+
+      {/* AI Voice Assistant Card (Tombol Hijau & Merah Voice) */}
+      <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5 sm:mt-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs text-neutral-100">Catat Transaksi dengan AI Voice (Bahasa Indonesia)</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                Suara Pintar
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-400 mt-0.5">
+              Cukup tekan <strong>Tombol Hijau</strong> (pemasukan) atau <strong>Tombol Merah</strong> (pengeluaran), lalu sebutkan nominal & keperluan Anda.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => onOpenVoiceModal?.('pemasukan')}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs transition-all shadow-md shadow-emerald-500/20 cursor-pointer active:scale-95"
+          >
+            <Mic className="w-4 h-4 animate-pulse" />
+            <span>Tombol Hijau (Pemasukan)</span>
+          </button>
+
+          <button
+            onClick={() => onOpenVoiceModal?.('pengeluaran')}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs transition-all shadow-md shadow-rose-500/20 cursor-pointer active:scale-95"
+          >
+            <Mic className="w-4 h-4 animate-pulse" />
+            <span>Tombol Merah (Pengeluaran)</span>
           </button>
         </div>
       </div>

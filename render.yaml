@@ -1,0 +1,15 @@
+# Render Blueprint — Finance Journal Pro
+# Cara pakai: di dashboard Render -> New -> Blueprint -> pilih repo "finance".
+# Lalu isi DATABASE_URL (koneksi Neon PostgreSQL) saat diminta.
+services:
+  - type: web
+    name: finance-journal-pro
+    runtime: node
+    plan: free
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

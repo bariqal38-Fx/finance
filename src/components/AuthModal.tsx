@@ -424,16 +424,6 @@ export const AuthModal: React.FC<Props> = ({
             </div>
           )}
 
-          {mode === 'login' && (
-            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[10px] text-neutral-300 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-purple-400 shrink-0" />
-              <span>
-                Mode Evaluasi: Bisa login dengan email akun mana pun memakai password{' '}
-                <code className="text-white font-mono bg-neutral-900 px-1 py-0.5 rounded">admin123</code>.
-              </span>
-            </div>
-          )}
-
           <div className="pt-2">
             <button
               type="submit"
