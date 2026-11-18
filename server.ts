@@ -8,8 +8,16 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Di serverless (Vercel) __dirname tidak tersedia di ESM, jadi pakai fallback.
+const __dirname = (() => {
+  try {
+    if (typeof __dirname !== 'undefined') return __dirname;
+  } catch { /* abaikan */ }
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch { /* abaikan */ }
+  return process.cwd();
+})();
 
 const app = express();
 app.use(express.json());
@@ -820,8 +828,7 @@ async function startServer() {
 
   if (!isProd || !distExists) {
     // Vite hanya dimuat saat mode development (serverless/Vercel tidak butuh)
-    const viteSpecifier = 'vite';
-    const { createServer: createViteServer } = await import(viteSpecifier);
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
