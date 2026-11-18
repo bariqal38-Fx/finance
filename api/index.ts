@@ -1,3 +1,3 @@
-import app from '../server';
+import app from './_srv';
 
 export default app;
