@@ -8,16 +8,8 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Di serverless (Vercel) __dirname tidak tersedia di ESM, jadi pakai fallback.
-const __dirname = (() => {
-  try {
-    if (typeof __dirname !== 'undefined') return __dirname;
-  } catch { /* abaikan */ }
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch { /* abaikan */ }
-  return process.cwd();
-})();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());

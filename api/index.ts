@@ -1,3 +1,6 @@
+// FILE INI DIGENERATE DARI server.ts - jangan edit manual.
+// Regenerasi otomatis saat `npm run build` ( lewat scripts/sync-api.mjs ).
+
 import express, { Request, Response } from 'express';
 import { Pool } from 'pg';
 import path from 'path';
@@ -8,16 +11,8 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// Di serverless (Vercel) __dirname tidak tersedia di ESM, jadi pakai fallback.
-const __dirname = (() => {
-  try {
-    if (typeof __dirname !== 'undefined') return __dirname;
-  } catch { /* abaikan */ }
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch { /* abaikan */ }
-  return process.cwd();
-})();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
