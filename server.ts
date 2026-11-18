@@ -820,7 +820,8 @@ async function startServer() {
 
   if (!isProd || !distExists) {
     // Vite hanya dimuat saat mode development (serverless/Vercel tidak butuh)
-    const { createServer: createViteServer } = await import('vite');
+    const viteSpecifier = 'vite';
+    const { createServer: createViteServer } = await import(viteSpecifier);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
