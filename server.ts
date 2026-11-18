@@ -158,8 +158,7 @@ async function initDatabase() {
   }
 }
 
-// DIAG: initDatabase dimatikan sementara
-// initDatabase();
+initDatabase();
 
 // ----------------------------------------------------
 // 3. API ROUTES (PENJELASAN RINGKAS & MUDAH DIPELAJARI)
