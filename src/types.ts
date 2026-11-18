@@ -25,6 +25,7 @@ export interface DaftarAkunUser {
   recentIncomeSource?: string | null;
   recentExpenseItem?: string | null;
   passwordResetRequired?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export interface Transaction {

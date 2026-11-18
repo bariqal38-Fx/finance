@@ -160,6 +160,19 @@ async function initDatabase() {
 initDatabase();
 
 // ----------------------------------------------------
+// 2.5 ADMIN UTAMA — aksesnya TIDAK bisa dicabut
+// ----------------------------------------------------
+// Akun pemilik jurnal ini perannya 'admin' terkunci. Admin lain (atau siapa
+// pun yang memanggil API) tidak bisa menurunkan / mencabut perannya.
+const SUPER_ADMIN_EMAILS: string[] = ['admin@financejournal.pro'];
+
+function isSuperAdminEmail(email: unknown): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const normalized = email.trim().toLowerCase();
+  return SUPER_ADMIN_EMAILS.some((e) => e.toLowerCase() === normalized);
+}
+
+// ----------------------------------------------------
 // 3. API ROUTES (PENJELASAN RINGKAS & MUDAH DIPELAJARI)
 // ----------------------------------------------------
 
@@ -590,6 +603,7 @@ app.get('/api/admin/users', async (_req: Request, res: Response) => {
           daftarNama: r.daftar_nama || r.name,
           email: r.email,
           role: r.role,
+          isSuperAdmin: isSuperAdminEmail(r.email),
           createdAt: r.created_at,
           passwordResetRequired: Boolean(r.password_reset_required),
           totalPemasukan: inc,
@@ -671,7 +685,8 @@ app.get('/api/admin/users/:id/breakdown', async (req: Request, res: Response) =>
   }
 });
 
-// Khusus Admin: Memberikan atau mencabut akses Admin ke pengguna
+// Khusus Admin: Memberikan atau mencabut akses Admin ke pengguna.
+// PENGECUALIAN: admin utama (pemilik jurnal) TIDAK bisa dicabut perannya.
 app.patch('/api/admin/users/:id/role', async (req: Request, res: Response) => {
   try {
     const { role } = req.body;
@@ -679,14 +694,27 @@ app.patch('/api/admin/users/:id/role', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Role harus "admin" atau "user".' });
       return;
     }
+
+    // Periksa akun target dulu: admin utama tidak boleh diubah perannya.
+    const targetRes = await pool.query(
+      'SELECT id, name, email, role FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (targetRes.rows.length === 0) {
+      res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
+      return;
+    }
+    if (isSuperAdminEmail(targetRes.rows[0].email)) {
+      res.status(403).json({
+        error: 'Akun admin utama tidak dapat dicabut atau diubah perannya.',
+      });
+      return;
+    }
+
     const updateRes = await pool.query(
       'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, name, email, role',
       [role, req.params.id]
     );
-    if (updateRes.rows.length === 0) {
-      res.status(404).json({ error: 'Pengguna tidak ditemukan.' });
-      return;
-    }
     res.json({
       message: `Akses berhasil diubah menjadi ${role === 'admin' ? 'Admin' : 'Pengguna Biasa'}.`,
       user: updateRes.rows[0],

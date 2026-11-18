@@ -53,7 +53,12 @@ export const AdminMonitoring: React.FC = () => {
   });
 
   // Admin bisa memberi / mencabut akses Administrator untuk pengguna lain.
+  // Kecuali admin utama — perannya terkunci dan tidak bisa dicabut.
   const toggleRole = async (u: DaftarAkunUser) => {
+    if (u.isSuperAdmin) {
+      setFeedbackMsg({ text: 'Admin utama tidak dapat dicabut aksesnya.', type: 'error' });
+      return;
+    }
     const nextRole = u.role === 'admin' ? 'user' : 'admin';
     const label = nextRole === 'admin' ? 'Administrator' : 'Pengguna Biasa';
 
@@ -300,6 +305,9 @@ export const AdminMonitoring: React.FC = () => {
                           {isAdmin ? (
                             <>
                               <Shield className="w-3 h-3" /> Administrator
+                              {u.isSuperAdmin && (
+                                <Lock className="w-3 h-3 text-amber-400" aria-label="Admin utama" />
+                              )}
                             </>
                           ) : (
                             <>
@@ -312,20 +320,30 @@ export const AdminMonitoring: React.FC = () => {
                         {formatDateIndo(u.createdAt)}
                       </td>
                       <td className="py-3 px-3">
-                        <button
-                          type="button"
-                          onClick={() => toggleRole(u)}
-                          disabled={roleLoading === u.id}
-                          title={isAdmin ? 'Cabut akses Administrator' : 'Beri akses Administrator'}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors disabled:opacity-50 cursor-pointer ${
-                            isAdmin
-                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20'
-                              : 'bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20'
-                          }`}
-                        >
-                          {isAdmin ? <ShieldAlert className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                          {roleLoading === u.id ? 'Memproses...' : isAdmin ? 'Cabut Admin' : 'Jadikan Admin'}
-                        </button>
+                        {u.isSuperAdmin ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 cursor-not-allowed"
+                            title="Admin utama — akses tidak dapat dicabut oleh admin lain"
+                          >
+                            <Lock className="w-3 h-3" />
+                            Admin Utama
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleRole(u)}
+                            disabled={roleLoading === u.id}
+                            title={isAdmin ? 'Cabut akses Administrator' : 'Beri akses Administrator'}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors disabled:opacity-50 cursor-pointer ${
+                              isAdmin
+                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20'
+                                : 'bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20'
+                            }`}
+                          >
+                            {isAdmin ? <ShieldAlert className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                            {roleLoading === u.id ? 'Memproses...' : isAdmin ? 'Cabut Admin' : 'Jadikan Admin'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
