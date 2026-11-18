@@ -386,54 +386,6 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
   }
 });
 
-// Fitur Login dengan Akun Google
-app.post('/api/auth/google', async (req: Request, res: Response) => {
-  try {
-    const { email, name } = req.body;
-    if (!email) {
-      res.status(400).json({ error: 'Email Google diperlukan.' });
-      return;
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = (name || cleanEmail.split('@')[0]).trim();
-    const isOwnerAdmin = cleanEmail === 'bariqal38@gmail.com' || cleanEmail === 'admin@financejournal.pro';
-    const roleToAssign = isOwnerAdmin ? 'admin' : 'user';
-
-    // Cek apakah akun sudah terdaftar
-    const result = await pool.query('SELECT id, name, email, role FROM users WHERE LOWER(email) = $1', [cleanEmail]);
-    if (result.rows.length === 0) {
-      // Jika baru pertama kali login Google, otomatis registrasi ke tabel users & daftar_akun
-      const randomPass = await bcrypt.hash(Math.random().toString(36), 10);
-      const insertUser = await pool.query(
-        'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-        [cleanName, cleanEmail, randomPass, roleToAssign]
-      );
-      await pool.query(
-        'INSERT INTO daftar_akun (user_id, nama_lengkap, email) VALUES ($1, $2, $3)',
-        [insertUser.rows[0].id, cleanName, cleanEmail]
-      );
-      res.status(201).json({
-        message: 'Akun Google berhasil didaftarkan dan login!',
-        user: insertUser.rows[0],
-      });
-      return;
-    }
-
-    const existingUser = result.rows[0];
-    if (isOwnerAdmin && existingUser.role !== 'admin') {
-      await pool.query("UPDATE users SET role = 'admin' WHERE id = $1", [existingUser.id]);
-      existingUser.role = 'admin';
-    }
-
-    res.json({
-      message: 'Login Google berhasil!',
-      user: existingUser,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Gagal otentikasi Google: ' + err.message });
-  }
-});
-
 // Proses 2.0 & 3.0 DFD: Catat Pemasukan atau Pengeluaran
 app.post('/api/transactions', async (req: Request, res: Response) => {
   try {

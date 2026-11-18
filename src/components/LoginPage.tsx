@@ -16,7 +16,6 @@ import {
   Shield,
 } from 'lucide-react';
 import { User, DbStatus } from '../types';
-import { signInWithGooglePopup } from '../lib/firebaseAuth';
 
 interface Props {
   onSuccess: (user: User) => void;
@@ -56,9 +55,6 @@ export const LoginPage: React.FC<Props> = ({ onSuccess, onOpenArchitecture, dbSt
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Google Login State
-  const [showGooglePrompt, setShowGooglePrompt] = useState(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState('bariqal38@gmail.com');
   const [googleNameInput, setGoogleNameInput] = useState('Bariq');
 
   useEffect(() => {
@@ -175,69 +171,6 @@ export const LoginPage: React.FC<Props> = ({ onSuccess, onOpenArchitecture, dbSt
     }
   };
 
-  const handleLaunchGoogleSignIn = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      // Buka Jendela Resmi Akun Google (Account Chooser Popup)
-      const googleData = await signInWithGooglePopup();
-
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: googleData.email,
-          name: googleData.name,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal login via Google.');
-
-      setSuccessMsg(data.message || `Berhasil masuk sebagai ${googleData.name}!`);
-      setTimeout(() => {
-        onSuccess(data.user);
-      }, 500);
-    } catch (err: any) {
-      console.warn('Google popup notice:', err);
-      if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-closed-by-user') {
-        setError('Login Google dibatalkan.');
-      } else {
-        // Jika browser memblokir popup di preview iFrame, buka opsi konfirmasi cepat akun Google
-        setShowGooglePrompt(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: googleEmailInput.trim(),
-          name: googleNameInput.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal login via Google.');
-
-      setSuccessMsg(data.message || 'Berhasil masuk dengan Google!');
-      setTimeout(() => {
-        onSuccess(data.user);
-      }, 500);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setShowGooglePrompt(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-neutral-950">
       {/* Top Header */}
@@ -295,52 +228,12 @@ export const LoginPage: React.FC<Props> = ({ onSuccess, onOpenArchitecture, dbSt
               {mode === 'reset-required' && 'Pembaruan Password Akun'}
             </h1>
             <p className="text-xs text-neutral-400 mt-1.5">
-              {mode === 'login' && 'Masukkan email & password atau gunakan Akun Google'}
+              {mode === 'login' && 'Masukkan email & password Anda'}
               {mode === 'register' && 'Pendaftaran otomatis sebagai Pengguna Jurnal Keuangan'}
               {mode === 'forgot' && 'Masukkan email dan verifikasi password lama Anda terlebih dahulu sebelum membuat password baru'}
               {mode === 'reset-required' && 'Akun Anda telah direset. Silakan masukkan password baru untuk mendaftar kembali'}
             </p>
           </div>
-
-          {/* Google Sign In Button */}
-          {mode !== 'forgot' && mode !== 'reset-required' && (
-            <div className="mb-5">
-              <button
-                type="button"
-                onClick={handleLaunchGoogleSignIn}
-                className="w-full py-2.5 px-4 rounded-xl bg-neutral-950 hover:bg-neutral-800/80 border border-neutral-800 text-neutral-200 text-xs font-semibold flex items-center justify-center gap-2.5 transition-all shadow-xs cursor-pointer"
-              >
-                {/* Official Google G Logo */}
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-                <span>Lanjutkan dengan Akun Google</span>
-              </button>
-
-              <div className="relative flex py-3.5 items-center">
-                <div className="grow border-t border-neutral-800"></div>
-                <span className="shrink mx-3 text-[11px] text-neutral-500 uppercase tracking-wider">
-                  atau dengan email
-                </span>
-                <div className="grow border-t border-neutral-800"></div>
-              </div>
-            </div>
-          )}
 
           {/* Special Reset Notice Banner */}
           {mode === 'reset-required' && (
@@ -635,81 +528,6 @@ export const LoginPage: React.FC<Props> = ({ onSuccess, onOpenArchitecture, dbSt
           </div>
         </div>
       </div>
-
-      {/* Google Login Simulation / Direct Prompt Modal */}
-      {showGooglePrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl text-neutral-100">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-bold text-sm">Masuk dengan Akun Google</h3>
-                <p className="text-[11px] text-neutral-400">Pilih atau konfirmasi akun Google Anda</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleGoogleLogin} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-neutral-300 font-medium mb-1">Nama Tampilan Google:</label>
-                <input
-                  type="text"
-                  required
-                  value={googleNameInput}
-                  onChange={(e) => setGoogleNameInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 focus:outline-hidden focus:border-neutral-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-neutral-300 font-medium mb-1">Email Google (Gmail):</label>
-                <input
-                  type="email"
-                  required
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-100 focus:outline-hidden focus:border-neutral-500 font-mono"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowGooglePrompt(false)}
-                  className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {loading ? 'Menghubungkan...' : 'Lanjutkan Masuk'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <footer className="border-t border-neutral-800/80 bg-neutral-950 py-4 text-center text-xs text-neutral-500">
