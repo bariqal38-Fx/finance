@@ -19,6 +19,7 @@ export const AdminMonitoring: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [roleLoading, setRoleLoading] = useState<number | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -50,6 +51,36 @@ export const AdminMonitoring: React.FC = () => {
     }
     return true;
   });
+
+  // Admin bisa memberi / mencabut akses Administrator untuk pengguna lain.
+  const toggleRole = async (u: DaftarAkunUser) => {
+    const nextRole = u.role === 'admin' ? 'user' : 'admin';
+    const label = nextRole === 'admin' ? 'Administrator' : 'Pengguna Biasa';
+
+    if (!window.confirm(`Jadikan "${u.name || u.daftarNama}" sebagai ${label}?`)) return;
+
+    setRoleLoading(u.id);
+    setFeedbackMsg(null);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mengubah peran akun.');
+
+      setFeedbackMsg({
+        text: `Peran "${u.name || u.daftarNama}" sekarang menjadi ${label}.`,
+        type: 'success',
+      });
+      await fetchUsers();
+    } catch (err: any) {
+      setFeedbackMsg({ text: err.message, type: 'error' });
+    } finally {
+      setRoleLoading(null);
+    }
+  };
 
   const totalAdmins = users.filter((u) => u.role === 'admin').length;
   const totalRegularUsers = users.filter((u) => u.role === 'user').length;
@@ -215,19 +246,20 @@ export const AdminMonitoring: React.FC = () => {
                 <th className="py-3 px-3">Alamat Email</th>
                 <th className="py-3 px-3">Peran Akun</th>
                 <th className="py-3 px-3">Tanggal Registrasi</th>
+                <th className="py-3 px-3">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-neutral-500">
+                  <td colSpan={6} className="py-10 text-center text-neutral-500">
                     <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-neutral-400" />
                     Memuat daftar pengguna dari database...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-neutral-500">
+                  <td colSpan={6} className="py-10 text-center text-neutral-500">
                     Tidak ada pengguna yang sesuai dengan kriteria pencarian.
                   </td>
                 </tr>
@@ -278,6 +310,22 @@ export const AdminMonitoring: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 text-neutral-400 font-mono text-[11px]">
                         {formatDateIndo(u.createdAt)}
+                      </td>
+                      <td className="py-3 px-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleRole(u)}
+                          disabled={roleLoading === u.id}
+                          title={isAdmin ? 'Cabut akses Administrator' : 'Beri akses Administrator'}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors disabled:opacity-50 cursor-pointer ${
+                            isAdmin
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20'
+                              : 'bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20'
+                          }`}
+                        >
+                          {isAdmin ? <ShieldAlert className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                          {roleLoading === u.id ? 'Memproses...' : isAdmin ? 'Cabut Admin' : 'Jadikan Admin'}
+                        </button>
                       </td>
                     </tr>
                   );

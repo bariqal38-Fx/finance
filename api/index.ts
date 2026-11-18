@@ -109,7 +109,7 @@ async function initDatabase() {
     const userCount = await pool.query('SELECT count(*) FROM users');
     if (parseInt(userCount.rows[0].count, 10) === 0) {
       console.log('Menyiapkan akun demo awal...');
-      const adminPass = await bcrypt.hash('admin123', 10);
+      const adminPass = '$2b$10$.EnTdboyAskrYDVIkJbaGuIG5wYHJg2SREcGpVIaSode/V0FFrIiC';
       const userPass = await bcrypt.hash('user123', 10);
 
       // Akun 1: Alif Bariq (Admin Utama)
@@ -133,21 +133,25 @@ async function initDatabase() {
       );
     }
 
-    // Pastikan akses Admin Utama Alif Bariq selalu aktif permanen dengan password tetap 'admin123'
-    const fixedAdminHash = await bcrypt.hash('admin123', 10);
-    await pool.query(`
-      INSERT INTO users (name, email, password_hash, role, password_reset_required)
-      VALUES ('Alif Bariq (Admin)', 'admin@financejournal.pro', $1, 'admin', FALSE)
-      ON CONFLICT (email) 
-      DO UPDATE SET password_hash = $1, role = 'admin', password_reset_required = FALSE;
-    `, [fixedAdminHash]);
+    // Akun admin utama dibuat SEKALI. Password TIDAK pernah ditulis sebagai teks
+    // polos di kode — hanya hash bcrypt (bisa ditimpa lewat env ADMIN_PASSWORD_HASH).
+    // Password sengaja TIDAK direset tiap server menyala, sehingga perubahan
+    // password lewat halaman Profil tersimpan permanen.
+    const adminSeedHash = process.env.ADMIN_PASSWORD_HASH ||
+      '$2b$10$.EnTdboyAskrYDVIkJbaGuIG5wYHJg2SREcGpVIaSode/V0FFrIiC';
 
-    await pool.query(`
-      INSERT INTO users (name, email, password_hash, role, password_reset_required)
-      VALUES ('Alif Bariq', 'bariqal38@gmail.com', $1, 'admin', FALSE)
-      ON CONFLICT (email) 
-      DO UPDATE SET password_hash = $1, role = 'admin', password_reset_required = FALSE;
-    `, [fixedAdminHash]);
+    for (const admin of [
+      { name: 'Alif Bariq (Admin)', email: 'admin@financejournal.pro' },
+      { name: 'Alif Bariq', email: 'bariqal38@gmail.com' },
+    ]) {
+      await pool.query(
+        `INSERT INTO users (name, email, password_hash, role, password_reset_required)
+         VALUES ($1, $2, $3, 'admin', FALSE)
+         ON CONFLICT (email) DO UPDATE SET role = 'admin', password_reset_required = FALSE`,
+        [admin.name, admin.email, adminSeedHash]
+      );
+    }
+
   } catch (err) {
     console.error('Inisialisasi database:', err);
   }
