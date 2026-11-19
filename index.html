@@ -40,8 +40,18 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.warn('SW registration skipped:', err);
+          // updateViaCache: 'none' -> sw.js selalu dicek versi terbaru ke server
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+            .then((reg) => { reg.update(); })
+            .catch((err) => { console.warn('SW registration skipped:', err); });
+
+          // Kalau service worker baru mengambil alih, muat ulang sekali
+          // supaya HTML lama yang sempat tersaji ikut terganti.
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
           });
         });
       }
